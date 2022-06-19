@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/jackc/pgconn v1.12.1
 	github.com/lib/pq v1.10.6
-	github.com/n-r-w/eno v0.0.0-00010101000000-000000000000
+	github.com/n-r-w/eno v0.0.0-20220619184937-425cde54ada1
 )
 
 require (
@@ -17,4 +17,3 @@ require (
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
-

@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/jackc/pgconn v1.12.1
 	github.com/lib/pq v1.10.6
-	github.com/n-r-w/eno v0.0.0-20220619184937-425cde54ada1
+	github.com/n-r-w/eno v1.0.0
 )
 
 require (

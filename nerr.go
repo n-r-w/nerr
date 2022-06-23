@@ -79,9 +79,12 @@ func New(args ...interface{}) error {
 		switch v := arg.(type) {
 		case string:
 			if len(e.Op) > 0 {
-				panic("operaton duplication")
+				if len(v) > 0 {
+					e.Op += ", " + v
+				}
+			} else {
+				e.Op = v
 			}
-			e.Op = v
 		case eno.ErrNo:
 			e.Code = int(v)
 			if len(e.Op) == 0 {

@@ -104,6 +104,21 @@ func New(args ...interface{}) error {
 				panic("error duplication")
 			}
 			e.Err = v
+		case []error:
+			var errs []string
+			for _, e := range v {
+				if e != nil {
+					errs = append(errs, e.Error())
+				}
+			}
+
+			if len(errs) > 0 {
+				if e.Err != nil {
+					panic("error duplication")
+				}
+
+				e.Err = errors.New(strings.Join(errs, ", "))
+			}
 		default:
 			panic(fmt.Sprintf("invalid argument type: %T", arg))
 		}

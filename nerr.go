@@ -30,6 +30,10 @@ func (e *Error) Error() string {
 		res = append(res, fmt.Sprintf("code: %d", code))
 	}
 
+	if trace := e.Trace(); len(trace) > 0 {
+		res = append(res, fmt.Sprintf("source: %s", trace[len(trace)-1]))
+	}
+
 	if len(res) == 0 && e.Err == nil {
 		return "undefined"
 	}

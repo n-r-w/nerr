@@ -77,13 +77,17 @@ func (e *Error) Trace() []string {
 }
 
 func New(args ...interface{}) error {
+	return NewLevel(2, args)
+}
+
+func NewLevel(codeLevel int, args ...interface{}) error {
 	if len(args) == 1 && args[0] == nil {
 		return nil
 	}
 
 	e := &Error{}
 
-	if pc, file, line, ok := runtime.Caller(1); ok {
+	if pc, file, line, ok := runtime.Caller(codeLevel); ok {
 		details := runtime.FuncForPC(pc)
 		e.Place = fmt.Sprintf("%s (%s:%d)", details.Name(), file, line)
 	}
@@ -92,7 +96,7 @@ func New(args ...interface{}) error {
 		switch v := arg.(type) {
 		case string:
 			if len(e.Op) > 0 {
-				if len(v) > 0 {
+				if len(v) > 0 && e.Op != v {
 					e.Op += ", " + v
 				}
 			} else {
@@ -108,11 +112,6 @@ func New(args ...interface{}) error {
 				panic("code duplication")
 			}
 			e.Code = v.(int)
-		case error:
-			if e.Err != nil {
-				panic("error duplication")
-			}
-			e.Err = v
 		case []error:
 			var errs []string
 			for _, e := range v {
@@ -128,6 +127,30 @@ func New(args ...interface{}) error {
 
 				e.Err = errors.New(strings.Join(errs, ", "))
 			}
+		case []any:
+			var errs []string
+			for _, e := range v {
+				if e != nil {
+					text := fmt.Sprintf("%v", e)
+					if len(text) > 0 {
+						errs = append(errs, fmt.Sprintf("%v", e))
+					}
+				}
+			}
+
+			if len(errs) > 0 {
+				if e.Err != nil {
+					panic("error duplication")
+				}
+
+				e.Err = errors.New(strings.Join(errs, ", "))
+			}
+		case error:
+			if e.Err != nil {
+				panic("error duplication")
+			}
+			e.Err = v
+
 		default:
 			panic(fmt.Sprintf("invalid argument type: %T", arg))
 		}

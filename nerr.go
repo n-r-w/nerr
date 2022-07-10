@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/jackc/pgconn"
@@ -52,7 +53,11 @@ func (e *Error) Error() string {
 }
 
 func (e *Error) Unwrap() error {
-	return e.Err
+	if e.Err == nil {
+		return e
+	} else {
+		return e.Err
+	}
 }
 
 func (e *Error) Ops() []string {
@@ -61,6 +66,10 @@ func (e *Error) Ops() []string {
 
 func (e *Error) TopCode() int {
 	return TopCode(e)
+}
+
+func (e *Error) TopOp() string {
+	return TopOp(e)
 }
 
 func (e *Error) Trace() []string {
@@ -165,6 +174,15 @@ func TopCode(e error) int {
 	}
 }
 
+func TopOp(e error) string {
+	ops := Ops(e)
+	if len(ops) > 0 {
+		return ops[len(ops)-1]
+	} else {
+		return strconv.Itoa(TopCode(e))
+	}
+}
+
 func Trace(e error) []string {
 	res := []string{}
 	if e == nil {
@@ -173,7 +191,15 @@ func Trace(e error) []string {
 
 	switch v := e.(type) {
 	case *Error:
-		res = append(res, v.Place)
+		info := []string{v.Place}
+		if len(v.Op) > 0 {
+			info = append(info, "op: "+v.Op)
+		}
+		if v.Code != 0 {
+			info = append(info, fmt.Sprintf("code: %d", v.Code))
+		}
+
+		res = append(res, strings.Join(info, "; "))
 		if v.Err != nil {
 			res = append(res, Trace(v.Err)...)
 		}

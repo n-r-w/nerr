@@ -81,8 +81,13 @@ func New(args ...interface{}) error {
 }
 
 func NewLevel(codeLevel int, args ...interface{}) error {
-	if len(args) == 1 && args[0] == nil {
-		return nil
+	if len(args) == 1 {
+		if args[0] == nil {
+			return nil
+		}
+		if e, ok := args[0].(error); ok && e == nil {
+			return nil
+		}
 	}
 
 	e := &Error{}
@@ -126,6 +131,8 @@ func NewLevel(codeLevel int, args ...interface{}) error {
 				}
 
 				e.Err = errors.New(strings.Join(errs, ", "))
+			} else if len(args) == 1 {
+				return nil
 			}
 		case []any:
 			var errs []string
@@ -144,6 +151,8 @@ func NewLevel(codeLevel int, args ...interface{}) error {
 				}
 
 				e.Err = errors.New(strings.Join(errs, ", "))
+			} else if len(args) == 1 {
+				return nil
 			}
 		case error:
 			if e.Err != nil {

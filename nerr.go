@@ -136,6 +136,15 @@ func NewLevel(codeLevel int, args ...interface{}) error {
 			}
 		case []any:
 			var errs []string
+			if len(v) == 1 {
+				if er, ok := v[0].(error); ok {
+					if e.Err == nil {
+						e.Err = er
+						continue
+					}
+				}
+			}
+
 			for _, e := range v {
 				if e != nil {
 					text := fmt.Sprintf("%v", e)

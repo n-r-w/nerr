@@ -76,11 +76,11 @@ func (e *Error) Trace() []string {
 	return Trace(e)
 }
 
-func New(args ...interface{}) error {
+func New(args ...any) error {
 	return NewLevel(2, args)
 }
 
-func NewLevel(codeLevel int, args ...interface{}) error {
+func NewLevel(codeLevel int, args ...any) error {
 	if len(args) == 1 {
 		if args[0] == nil {
 			return nil
@@ -98,86 +98,98 @@ func NewLevel(codeLevel int, args ...interface{}) error {
 	}
 
 	for _, arg := range args {
-		switch v := arg.(type) {
-		case string:
-			if len(e.Op) > 0 {
-				if len(v) > 0 && e.Op != v {
-					e.Op += ", " + v
-				}
-			} else {
-				e.Op = v
-			}
-		case eno.ErrNo:
-			e.Code = int(v)
-			if len(e.Op) == 0 {
-				e.Op = eno.Name(v)
-			}
-		case int, int8, int32:
-			if e.Code != 0 {
-				panic("code duplication")
-			}
-			e.Code = v.(int)
-		case []error:
-			var errs []string
-			for _, e := range v {
-				if e != nil {
-					errs = append(errs, e.Error())
-				}
-			}
-
-			if len(errs) > 0 {
-				if e.Err != nil {
-					panic("error duplication")
-				}
-
-				e.Err = errors.New(strings.Join(errs, ", "))
-			} else if len(args) == 1 {
-				return nil
-			}
-		case []any:
-			var errs []string
-			if len(v) == 1 {
-				if er, ok := v[0].(error); ok {
-					if e.Err == nil {
-						e.Err = er
-						continue
-					}
-				}
-			}
-
-			for _, e := range v {
-				if e != nil {
-					text := fmt.Sprintf("%v", e)
-					if len(text) > 0 {
-						errs = append(errs, fmt.Sprintf("%v", e))
-					}
-				}
-			}
-
-			if len(errs) > 0 {
-				if e.Err != nil {
-					panic("error duplication")
-				}
-
-				e.Err = errors.New(strings.Join(errs, ", "))
-			} else if len(args) == 1 {
-				return nil
-			}
-		case error:
-			if e.Err != nil {
-				panic("error duplication")
-			}
-			e.Err = v
-
-		default:
-			panic(fmt.Sprintf("invalid argument type: %T", arg))
+		if !prepareProperty(e, arg) {
+			return nil
 		}
+
 	}
 
 	return e
 }
 
-func NewFmt(format string, args ...interface{}) error {
+func prepareProperty(e *Error, arg any) bool {
+	if arg == nil {
+		return false
+	}
+
+	switch v := arg.(type) {
+	case string:
+		if len(e.Op) > 0 {
+			if len(v) > 0 && e.Op != v {
+				e.Op += ", " + v
+			}
+		} else {
+			e.Op = v
+		}
+	case eno.ErrNo:
+		e.Code = int(v)
+		if len(e.Op) == 0 {
+			e.Op = eno.Name(v)
+		}
+	case int, int8, int32:
+		if e.Code != 0 {
+			panic("code duplication")
+		}
+		e.Code = v.(int)
+	case []error:
+		if len(v) == 1 {
+			return prepareProperty(e, v[0])
+		}
+
+		var errs []string
+		for _, e := range v {
+			if e != nil {
+				errs = append(errs, e.Error())
+			}
+		}
+
+		if len(errs) > 0 {
+			if e.Err != nil {
+				panic("error duplication")
+			}
+
+			e.Err = errors.New(strings.Join(errs, ", "))
+		} else {
+			return false
+		}
+	case []any:
+		var errs []string
+		if len(v) == 1 {
+			return prepareProperty(e, v[0])
+		}
+
+		for _, e := range v {
+			if e != nil {
+				text := fmt.Sprintf("%v", e)
+				if len(text) > 0 {
+					errs = append(errs, fmt.Sprintf("%v", e))
+				}
+			}
+		}
+
+		if len(errs) > 0 {
+			if e.Err != nil {
+				panic("error duplication")
+			}
+
+			e.Err = errors.New(strings.Join(errs, ", "))
+		} else {
+			return false
+		}
+	case error:
+		if e.Err != nil {
+			panic("error duplication")
+		}
+		e.Err = v
+
+	default:
+		panic(fmt.Sprintf("invalid argument type: %T", arg))
+	}
+
+	return true
+}
+
+func NewFmt(format string, args ...any) error {
 	return New(fmt.Sprintf(format, args...))
 }
 
